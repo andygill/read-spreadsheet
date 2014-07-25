@@ -2,3 +2,6 @@ dist/
 my.key
 *~
 \#*
+.cabal-sandbox
+cabal.sandbox.config
+
