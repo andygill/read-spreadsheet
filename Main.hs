@@ -12,6 +12,7 @@ import Data.Aeson.Encode.Pretty
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Vector as V
 import  Network.Curl.Download
+import Data.Text(Text)
 
 main = withCurlDo $ do
   key <- readFile "my.key"
@@ -21,14 +22,29 @@ main = withCurlDo $ do
                 "/public/basic?alt=json")
 --  print code
 --  print str
-  let Right (Object obj :: Value) = parseOnly Parser.value bs
-  let Just (Object feed)   = HashMap.lookup "feed"  obj
-  let Just (Array entry)  = HashMap.lookup "entry" feed
-  sequence_ [ do let Just (Object c) = HashMap.lookup "content" e
+  let Right (obj :: Value) = parseOnly Parser.value bs
+  let feed = label "feed"  obj
+  let entry = label "entry" feed
+  sequence_ [ do let c = label "content" e
                  print c
-            | Object e <- V.toList entry
+            | e <- toList entry
             ]
 --  BSL.putStrLn (encodePretty entry)
 
-myPack :: String -> ByteString
-myPack = BS.pack . map (fromIntegral . ord)
+toList :: Value -> [Value]
+toList (Array o) = V.toList o
+toList _ = error "toList failed, not an Array"
+
+label :: Text -> Value -> Value
+label lab (Object o) = case HashMap.lookup lab o of
+                         Nothing -> error $ "lookup of " ++ show lab ++ " failed"
+                         Just v -> v
+label lab _ = error $ "lookup of " ++ show lab ++ " failed, not an object"
+
+index :: Int -> Value -> Value
+index ix (Array o) = o V.! ix
+index ix _ = error $ "lookup of " ++ show ix ++ " failed, not an array"
+
+len :: Value -> Int
+len (Array o) = V.length o
+len _ = error $ "len failed, not an array"
