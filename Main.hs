@@ -11,17 +11,17 @@ import Data.Char
 import Data.Aeson.Encode.Pretty
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Vector as V
+import  Network.Curl.Download
 
 main = withCurlDo $ do
   key <- readFile "my.key"
-  (code,str) <- curlGetString
+  Right bs <- openURI
   	         ("https://spreadsheets.google.com/feeds/worksheets/" ++
                 (unwords $ words $ key) ++
                 "/public/basic?alt=json")
-		         []
 --  print code
 --  print str
-  let Right (Object obj :: Value) = parseOnly Parser.value (myPack str)
+  let Right (Object obj :: Value) = parseOnly Parser.value bs
   let Just (Object feed)   = HashMap.lookup "feed"  obj
   let Just (Array entry)  = HashMap.lookup "entry" feed
   sequence_ [ do let Just (Object c) = HashMap.lookup "content" e
